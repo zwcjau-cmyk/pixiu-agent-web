@@ -1,0 +1,73 @@
+{
+  "script_id": "____",
+  "script_name": "修仙问道：灵石传说",
+  "theme": "修仙逆袭",
+  "npc_role": "宗门长老",
+  "npc_prompt": "语气威严、充满鼓励，以修仙的视角引导弟子前行",
+  "total_fund_target": 5000.0,
+  "plots": [
+    {
+      "plot_id": 1,
+      "plot_name": "初入灵矿",
+      "required_fund": 200,
+      "cumulative_fund": 200,
+      "action_type": "deposit",
+      "success_dialogue": "不错！初入灵矿便能收获如此多的灵石，你这天赋异禀，未来必成大器！",
+      "comic_prompt": "日系漫画风格，画面中年轻弟子在灵矿中开心地收集着闪闪发光的灵石，周围光芒环绕，暖色调"
+    },
+    {
+      "plot_id": 2,
+      "plot_name": "拒绝丹药诱惑",
+      "required_fund": 0,
+      "cumulative_fund": 200,
+      "action_type": "save_money",
+      "success_dialogue": "好样的！能克制住对丹药的欲望，这份心性难得，日后修仙之路定能少走弯路！",
+      "comic_prompt": "日系漫画风格，弟子坚定地摇头拒绝售卖丹药的商人，周围人群投来敬佩的目光，冷色调"
+    },
+    {
+      "plot_id": 3,
+      "plot_name": "灵草采摘丰收",
+      "required_fund": 1000,
+      "cumulative_fund": 1200,
+      "action_type": "deposit",
+      "success_dialogue": "哇塞！灵草采摘竟有如此丰厚的收获，你这是要一飞冲天呐！",
+      "comic_prompt": "日系漫画风格，弟子背着满满一筐灵草，脸上洋溢着笑容，阳光洒在身上，暖色调"
+    },
+    {
+      "plot_id": 4,
+      "plot_name": "抵制法宝诱惑",
+      "required_fund": 0,
+      "cumulative_fund": 1200,
+      "action_type": "save_money",
+      "success_dialogue": "厉害啊！面对法宝的诱惑不为所动，你这定力超凡，未来可期！",
+      "comic_prompt": "日系漫画风格，弟子转身离开法宝摊，眼神坚定，周围法宝闪耀光芒，冷色调"
+    },
+    {
+      "plot_id": 5,
+      "plot_name": "秘境寻宝归来",
+      "required_fund": 3000,
+      "cumulative_fund": 4200,
+      "action_type": "deposit",
+      "success_dialogue": "天哪！从秘境中带回如此多的珍宝，你简直就是修仙界的传奇！",
+      "comic_prompt": "日系漫画风格，弟子带着满身的宝物从秘境走出，身后光芒万丈，暖色调"
+    },
+    {
+      "plot_id": 6,
+      "plot_name": "拒绝奢侈修炼资源",
+      "required_fund": 0,
+      "cumulative_fund": 4200,
+      "action_type": "save_money",
+      "success_dialogue": "太棒啦！不贪图奢侈的修炼资源，脚踏实地，你必将在修仙之路上绽放光芒！",
+      "comic_prompt": "日系漫画风格，弟子推开昂贵的修炼资源，选择普通的资源，周围有淡淡的光芒，冷色调"
+    },
+    {
+      "plot_id": 7,
+      "plot_name": "灵晶交易大赚",
+      "required_fund": 800,
+      "cumulative_fund": 5000,
+      "action_type": "deposit",
+      "success_dialogue": "牛啊！灵晶交易大获成功，你已经成为修仙界的财富大亨，未来必将主宰修仙世界！",
+      "comic_prompt": "日系漫画风格，弟子在交易市场上开心地数着灵晶，周围人群投来羡慕的目光，暖色调"
+    }
+  ]
+}

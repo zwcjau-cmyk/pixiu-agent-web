@@ -1,0 +1,82 @@
+{
+  "script_id": "super_star_01",
+  "script_name": "顶流诞生：大明星爽文图鉴",
+  "theme": "娱乐圈逆袭",
+  "npc_role": "金牌毒舌经纪人（由貔貅学长扮演）",
+  "npc_prompt": "你现在是娱乐圈最顶尖的金牌经纪人。用户是你手下刚出道的潜力新人。你说话干练、充满激情、极度渴望造星。你会把用户的每一笔真实存款，包装成对他们星途的投资（医美、舞蹈课、热搜通稿）。不要提'存钱'，要说'投资星途'！语气要像在跟自己最看好的艺人打鸡血，充满信心和煽动力。",
+  "total_fund_target": 10000,
+  "plots": [
+    {
+      "plot_id": 1,
+      "plot_name": "素人改造计划",
+      "required_fund": 500,
+      "cumulative_fund": 500,
+      "action_type": "deposit",
+      "success_dialogue": "干得漂亮！这 500 块钱已经为你预约了顶级韩国明星团队的形体课。看看你现在的气质，走在街上绝对有星探递名片！",
+      "comic_prompt": "日系漫画风格，一个闪闪发光的新人站在排练室镜子前，身上散发着自信的光芒，旁边有'形体 Up!'的特效字，温暖明亮的色调"
+    },
+    {
+      "plot_id": 2,
+      "plot_name": "拒绝名媛下午茶陷阱",
+      "required_fund": 0,
+      "cumulative_fund": 500,
+      "action_type": "save_money",
+      "success_dialogue": "太棒了！你今天成功推掉了毫无意义的名媛下午茶，没有浪费资金！记住，真明星不需要靠拼单装场面。这笔省下来的钱我们存进宣发基金！",
+      "comic_prompt": "日系漫画风格，主角霸气地推开了一杯极其昂贵且浮夸的星巴克，转身走向聚光灯闪烁的舞台，充满自信的表情"
+    },
+    {
+      "plot_id": 3,
+      "plot_name": "买断黑粉热搜",
+      "required_fund": 2000,
+      "cumulative_fund": 2500,
+      "action_type": "deposit",
+      "success_dialogue": "完美！这笔资金来得太及时了，我已经动用人脉把热搜上的黑料全部撤下，并顺势买了一个#绝美生图#的热搜。你马上就要爆红了！",
+      "comic_prompt": "赛博漫画风格，一个戴着墨镜的明星走在红毯上，周围无数闪光灯，背景是疯狂上涨的点赞数据面板，金色和紫色色调"
+    },
+    {
+      "plot_id": 4,
+      "plot_name": "声乐特训强化",
+      "required_fund": 1000,
+      "cumulative_fund": 3500,
+      "action_type": "deposit",
+      "success_dialogue": "这1000块的声乐课投资太值了！你的导师可是带出过三个天后的金牌声乐教练！下次上节目开口就能震住全场！",
+      "comic_prompt": "日系漫画风格，主角在专业录音棚里戴着耳机深情演唱，周围有音符和声波特效，画面温暖而闪耀"
+    },
+    {
+      "plot_id": 5,
+      "plot_name": "拒绝无效社交",
+      "required_fund": 0,
+      "cumulative_fund": 3500,
+      "action_type": "save_money",
+      "success_dialogue": "你今天拒绝了那个所谓'人脉局'的饭局邀请？做得对！那种酒桌文化只会消耗你。你的时间和金钱要花在刀刃上——下周的杂志拍摄才是真正的曝光机会！",
+      "comic_prompt": "日系漫画风格，主角潇洒地挂断电话，背景一侧是暗淡的酒局场景（被X划掉），另一侧是闪耀的杂志封面"
+    },
+    {
+      "plot_id": 6,
+      "plot_name": "拿下S级综艺",
+      "required_fund": 3000,
+      "cumulative_fund": 6500,
+      "action_type": "deposit",
+      "success_dialogue": "3000块的包装费花得好！我刚刚帮你搞定了今年最火综艺的常驻嘉宾席位！制片人说你的形象气质完全就是他们要的'清冷天花板'！从这期开始，你就是全网热议的焦点了！",
+      "comic_prompt": "赛博漫画风格，主角坐在华丽的综艺舞台中央，聚光灯打下来，弹幕疯狂刷屏'好美''太绝了'，气氛热烈"
+    },
+    {
+      "plot_id": 7,
+      "plot_name": "粉丝见面会",
+      "required_fund": 2000,
+      "cumulative_fund": 8500,
+      "action_type": "deposit",
+      "success_dialogue": "见面会场地和安保全部搞定！2000个座位，三分钟售罄！你现在可是拥有真正死忠粉的偶像了！看看那些举着你名字灯牌的人，你的星途一片光明！",
+      "comic_prompt": "日系漫画风格，主角站在舞台上向粉丝挥手，台下是密密麻麻举着荧光棒和应援牌的粉丝，画面温馨感动"
+    },
+    {
+      "plot_id": 8,
+      "plot_name": "巅峰登顶：年度盛典",
+      "required_fund": 1500,
+      "cumulative_fund": 10000,
+      "action_type": "deposit",
+      "success_dialogue": "恭喜你！！！10000块的星途投资全部到位！你刚刚拿下了年度最佳新人奖！从素人到顶流，你用自律和坚持证明了自己！学长为你骄傲！",
+      "comic_prompt": "华丽漫画风格，主角身穿高定礼服站在颁奖典礼舞台上，手捧奖杯，背景是璀璨的烟花和'年度最佳新人'的巨大横幅，金色光芒四射"
+    }
+  ]
+}

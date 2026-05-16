@@ -1,0 +1,82 @@
+{
+  "script_id": "_____",
+  "script_name": "女明星的逆袭：从校园到戛纳",
+  "theme": "娱乐圈成长",
+  "npc_role": "经纪人",
+  "npc_prompt": "说话幽默风趣，充满鼓励和激情，善于用夸张的语言调动情绪",
+  "total_fund_target": 10000.0,
+  "plots": [
+    {
+      "plot_id": 1,
+      "plot_name": "初入校园社团",
+      "required_fund": 300,
+      "cumulative_fund": 300,
+      "action_type": "deposit",
+      "success_dialogue": "哇塞！你成功加入校园社团啦，这可是迈向明星之路的第一步，未来的大明星就是你呀！",
+      "comic_prompt": "日系漫画风格，画面中女主角兴奋地拿着社团邀请函，周围是欢呼的同学，色彩明亮欢快"
+    },
+    {
+      "plot_id": 2,
+      "plot_name": "拒绝高价化妆品",
+      "required_fund": 0,
+      "cumulative_fund": 300,
+      "action_type": "save_money",
+      "success_dialogue": "牛哇！你抵住了高价化妆品的诱惑，这省钱的本事简直绝了，离戛纳影后又近一步啦！",
+      "comic_prompt": "日系漫画风格，女主角对着昂贵化妆品摇头，然后开心地走开，画面色调活泼"
+    },
+    {
+      "plot_id": 3,
+      "plot_name": "接拍校园广告",
+      "required_fund": 1000,
+      "cumulative_fund": 1300,
+      "action_type": "deposit",
+      "success_dialogue": "太厉害啦！你成功接拍校园广告，已经开始在校园里崭露头角咯，未来一片光明啊！",
+      "comic_prompt": "日系漫画风格，女主角在校园广告拍摄现场自信微笑，周围是忙碌的工作人员，色彩鲜艳"
+    },
+    {
+      "plot_id": 4,
+      "plot_name": "放弃豪华派对",
+      "required_fund": 0,
+      "cumulative_fund": 1300,
+      "action_type": "save_money",
+      "success_dialogue": "绝了！你果断放弃豪华派对，把心思都放在事业上，这觉悟，影后非你莫属！",
+      "comic_prompt": "日系漫画风格，女主角拒绝派对邀请，转身投入学习，画面温馨又积极"
+    },
+    {
+      "plot_id": 5,
+      "plot_name": "出演小成本电影",
+      "required_fund": 2000,
+      "cumulative_fund": 3300,
+      "action_type": "deposit",
+      "success_dialogue": "哇哦！你出演小成本电影，演技大放异彩，这是要一飞冲天的节奏啊！",
+      "comic_prompt": "日系漫画风格，女主角在电影拍摄现场认真表演，周围是称赞的剧组人员，色调温暖"
+    },
+    {
+      "plot_id": 6,
+      "plot_name": "拒绝高价礼服",
+      "required_fund": 0,
+      "cumulative_fund": 3300,
+      "action_type": "save_money",
+      "success_dialogue": "太牛啦！你拒绝高价礼服，懂得务实，这品质简直无敌，戛纳红毯在向你招手！",
+      "comic_prompt": "日系漫画风格，女主角对着华丽礼服摆摆手，然后选择了简约服装，画面轻松诙谐"
+    },
+    {
+      "plot_id": 7,
+      "plot_name": "入围国际电影节",
+      "required_fund": 3000,
+      "cumulative_fund": 6300,
+      "action_type": "deposit",
+      "success_dialogue": "天呐！你入围国际电影节，这是历史性的突破，影后的光环已经在闪耀啦！",
+      "comic_prompt": "日系漫画风格，女主角拿着入围证书激动落泪，背景是电影节的标志，色彩绚丽"
+    },
+    {
+      "plot_id": 8,
+      "plot_name": "获得戛纳影后",
+      "required_fund": 3700,
+      "cumulative_fund": 10000,
+      "action_type": "deposit",
+      "success_dialogue": "无敌啦！你成功获得戛纳影后，你的名字将永远铭刻在影史上，你就是传奇啊！",
+      "comic_prompt": "日系漫画风格，女主角在戛纳红毯上光彩照人，手捧奖杯，周围是欢呼的人群，色彩辉煌"
+    }
+  ]
+}
