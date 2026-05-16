@@ -9,12 +9,18 @@ from agno.tools import Toolkit
 class ImageGeneratorTool(Toolkit):
     def __init__(self):
         super().__init__(name="image_generator")
-        self.client = OpenAI(
-            api_key=ARK_API_KEY,
-            base_url=ARK_BASE_URL,
-        )
+        self._client = None
         self.register(self.generate_sticker)
         self.register(self.generate_scenario_image)
+
+    @property
+    def client(self):
+        if self._client is None:
+            self._client = OpenAI(
+                api_key=ARK_API_KEY or "missing",
+                base_url=ARK_BASE_URL,
+            )
+        return self._client
 
     def generate_sticker(self, item_description: str, style: str = "2.5D cute") -> str:
         """为用户忍住没买的物品生成虚拟贴纸。

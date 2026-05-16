@@ -10,11 +10,17 @@ from agno.tools import Toolkit
 class SpeechRecognizerTool(Toolkit):
     def __init__(self):
         super().__init__(name="speech_recognizer")
-        self.client = OpenAI(
-            api_key=ARK_API_KEY,
-            base_url=ARK_BASE_URL,
-        )
+        self._client = None
         self.register(self.transcribe_audio)
+
+    @property
+    def client(self):
+        if self._client is None:
+            self._client = OpenAI(
+                api_key=ARK_API_KEY or "missing",
+                base_url=ARK_BASE_URL,
+            )
+        return self._client
 
     def transcribe_audio(self, audio_path: Optional[str] = None, audio_base64: Optional[str] = None) -> str:
         """将语音文件转录为文本。

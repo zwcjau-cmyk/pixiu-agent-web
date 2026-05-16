@@ -32,14 +32,20 @@ class StickerMakerTool(Toolkit):
 
     def __init__(self):
         super().__init__(name="sticker_maker")
-        self.client = OpenAI(
-            api_key=ARK_API_KEY,
-            base_url=ARK_BASE_URL,
-        )
+        self._client = None
         self.register(self.recognize_product)
         self.register(self.create_sticker_from_image)
         self.register(self.add_to_treasure_shelf)
         self.register(self.get_treasure_shelf)
+
+    @property
+    def client(self):
+        if self._client is None:
+            self._client = OpenAI(
+                api_key=ARK_API_KEY or "missing",
+                base_url=ARK_BASE_URL,
+            )
+        return self._client
 
     def recognize_product(self, image_base64: str) -> str:
         """通过视觉模型识别商品图片中的商品名称和价格。

@@ -8,11 +8,17 @@ from config import ARK_API_KEY, ARK_BASE_URL, MODEL_SEEDREAM
 class GenerateComicPlotTool(Toolkit):
     def __init__(self):
         super().__init__(name="generate_comic_plot")
-        self.client = OpenAI(
-            api_key=ARK_API_KEY,
-            base_url=ARK_BASE_URL,
-        )
+        self._client = None
         self.register(self.generate_story_comic)
+
+    @property
+    def client(self):
+        if self._client is None:
+            self._client = OpenAI(
+                api_key=ARK_API_KEY or "missing",
+                base_url=ARK_BASE_URL,
+            )
+        return self._client
 
     def generate_story_comic(self, scene_description: str, episode_title: str) -> str:
         """生成剧本世界的沉浸式插画。只展示剧本世界里发生的事情，不展示现实。
