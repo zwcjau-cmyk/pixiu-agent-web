@@ -106,7 +106,8 @@ async def chat_endpoint(req: ChatRequest):
     # 每次请求动态更新日期，确保跨天后日期正确
     today_str = _dt.now().strftime("%Y-%m-%d")
     base_prompt = SOUL_PATH.read_text(encoding="utf-8")
-    pixiu_agent.instructions = [base_prompt + _date_template.format(today=today_str)]
+    user_id_instruction = f"\n\n---\n## 用户标识\n- 当前用户的 user_id 是 \"{req.user_id}\"\n- 调用所有工具时，如果工具有 user_id 参数，必须传 \"{req.user_id}\"\n- 包括但不限于：record_expense、record_income、get_daily_summary、get_vault_status、deposit_to_account、update_goal_progress\n"
+    pixiu_agent.instructions = [base_prompt + _date_template.format(today=today_str) + user_id_instruction]
 
     def event_stream():
         response_stream = pixiu_agent.run(
@@ -229,11 +230,18 @@ async def get_shelf(user_id: str = "default_user"):
 
 # ============ 收支记录 API ============
 
-EXPENSES_FILE = Path(__file__).parent / "data" / "expenses.json"
-VAULT_FILE = Path(__file__).parent / "data" / "vault.json"
+DATA_DIR = Path(__file__).parent / "data"
+VAULT_FILE = DATA_DIR / "vault.json"
 
 from data.mock_data import DEFAULT_EXPENSES as _DEFAULT_EXPENSES
 from data.mock_data import DEFAULT_VAULT as _DEFAULT_VAULT
+from tools.vault_manager import _get_user_vault_file, _load_vault as _load_user_vault, DEFAULT_VAULT as _VAULT_DEFAULT
+
+
+def _get_user_expenses_file(user_id: str) -> Path:
+    """按 user_id 返回隔离的收支文件路径"""
+    safe_id = user_id.replace("/", "_").replace("..", "_")
+    return DATA_DIR / f"expenses_{safe_id}.json"
 
 
 def _load_json(filepath: Path) -> dict:
@@ -241,7 +249,6 @@ def _load_json(filepath: Path) -> dict:
         content = filepath.read_text(encoding="utf-8").strip()
         if content:
             data = json.loads(content)
-            # 如果文件存在但内容是空壳（无实际记录），返回空让 fallback 生效
             if data:
                 return data
     return {}
@@ -257,6 +264,7 @@ class ExpenseRecord(BaseModel):
     description: str = ""  # 描述
     type: str = "expense"  # expense 或 income
     date: Optional[str] = None  # 日期，默认今天
+    user_id: str = "default_user"  # 用户标识
 
 
 class VaultUpdate(BaseModel):
@@ -264,15 +272,17 @@ class VaultUpdate(BaseModel):
     amount: Optional[float] = None  # 存入金额
     goal_name: Optional[str] = None  # 目标名称
     goal_amount: Optional[float] = None  # 目标新存入金额
+    user_id: str = "default_user"  # 用户标识
 
 
 @app.post("/api/expense/record")
 async def record_expense(req: ExpenseRecord):
-    """记录一笔收支"""
+    """记录一笔收支（按 user_id 隔离存储）"""
     import json as _json
     from datetime import datetime
 
-    data = _load_json(EXPENSES_FILE)
+    expenses_file = _get_user_expenses_file(req.user_id)
+    data = _load_json(expenses_file)
     if "records" not in data:
         data["records"] = []
     if "monthly_summary" not in data:
@@ -294,7 +304,7 @@ async def record_expense(req: ExpenseRecord):
     else:
         data["monthly_summary"]["total_income"] = data["monthly_summary"].get("total_income", 0) + req.amount
 
-    _save_json(EXPENSES_FILE, data)
+    _save_json(expenses_file, data)
 
     return {
         "success": True,
@@ -305,11 +315,17 @@ async def record_expense(req: ExpenseRecord):
 
 
 @app.get("/api/expense/summary")
-async def get_expense_summary():
-    """获取收支汇总（返回全部记录供日历使用）—— 始终合并 mock + 用户数据"""
-    user_data = _load_json(EXPENSES_FILE)
-    user_records = user_data.get("records", []) if user_data else []
+async def get_expense_summary(user_id: Optional[str] = None):
+    """获取收支汇总 —— 只返回 Mock 数据（用户数据隔离，不混入公共展示）"""
     mock_records = _DEFAULT_EXPENSES.get("records", [])
+
+    # 如果有 user_id，合并该用户的私有数据
+    user_records = []
+    if user_id:
+        user_file = _get_user_expenses_file(user_id)
+        user_data = _load_json(user_file)
+        user_records = user_data.get("records", []) if user_data else []
+
     all_records = user_records + mock_records
 
     total_expense = sum(r["amount"] for r in all_records if r.get("type") == "expense")
@@ -321,11 +337,16 @@ async def get_expense_summary():
 
 
 @app.get("/api/expense/day/{date}")
-async def get_expense_by_day(date: str):
+async def get_expense_by_day(date: str, user_id: Optional[str] = None):
     """获取某一天的收支明细，date格式：2026-05-16"""
-    user_data = _load_json(EXPENSES_FILE)
-    user_records = user_data.get("records", []) if user_data else []
     mock_records = _DEFAULT_EXPENSES.get("records", [])
+
+    user_records = []
+    if user_id:
+        user_file = _get_user_expenses_file(user_id)
+        user_data = _load_json(user_file)
+        user_records = user_data.get("records", []) if user_data else []
+
     all_records = user_records + mock_records
 
     # 筛选当天记录
@@ -357,11 +378,8 @@ async def get_expense_by_day(date: str):
 
 @app.post("/api/vault/update")
 async def update_vault(req: VaultUpdate):
-    """更新金库资产或梦想清单进度"""
-    data = _load_json(VAULT_FILE)
-    if not data:
-        import copy
-        data = copy.deepcopy(_DEFAULT_VAULT)
+    """更新金库资产或梦想清单进度（按 user_id 隔离）"""
+    data = _load_user_vault(req.user_id)
 
     message_parts = []
 
@@ -406,7 +424,8 @@ async def update_vault(req: VaultUpdate):
             message_parts.append(f"新目标「{req.goal_name}」已创建，目标金额 ¥{req.goal_amount}")
         data["goals"] = goals
 
-    _save_json(VAULT_FILE, data)
+    from tools.vault_manager import _save_vault as _save_user_vault
+    _save_user_vault(data, req.user_id)
 
     return {
         "success": True,
@@ -418,20 +437,26 @@ async def update_vault(req: VaultUpdate):
 
 
 @app.get("/api/vault/status")
-async def get_vault_status():
-    """获取金库完整状态"""
-    data = _load_json(VAULT_FILE)
-    if not data:
-        data = _DEFAULT_VAULT
+async def get_vault_status(user_id: Optional[str] = None):
+    """获取金库完整状态（按 user_id 隔离）"""
+    if user_id:
+        data = _load_user_vault(user_id)
+    else:
+        data = _load_json(VAULT_FILE)
+        if not data:
+            data = _DEFAULT_VAULT
     return data
 
 
 @app.get("/api/vault/account/{account_id}")
-async def get_account_detail(account_id: str):
-    """获取某个账户的详细信息（产品明细、交易记录等）"""
-    data = _load_json(VAULT_FILE)
-    if not data:
-        data = _DEFAULT_VAULT
+async def get_account_detail(account_id: str, user_id: Optional[str] = None):
+    """获取某个账户的详细信息（按 user_id 隔离）"""
+    if user_id:
+        data = _load_user_vault(user_id)
+    else:
+        data = _load_json(VAULT_FILE)
+        if not data:
+            data = _DEFAULT_VAULT
     accounts = data.get("accounts", {})
     if account_id not in accounts:
         return {"success": False, "message": f"账户 {account_id} 不存在"}
@@ -455,12 +480,13 @@ class WithdrawRequest(BaseModel):
     account_id: str
     amount: float
     reason: str = ""
+    user_id: str = "default_user"
 
 
 @app.post("/api/vault/withdraw")
 async def request_withdraw(req: WithdrawRequest):
     """提交转出申请（需要貔貅学长审批）"""
-    data = _load_json(VAULT_FILE)
+    data = _load_user_vault(req.user_id)
     accounts = data.get("accounts", {})
     if req.account_id not in accounts:
         return {"success": False, "message": "账户不存在"}

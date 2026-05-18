@@ -1,16 +1,22 @@
-"""日记转账单工具 - 从用户自然语言中提取消费记录，直接读写本地数据"""
+"""日记转账单工具 - 从用户自然语言中提取消费记录，按 user_id 隔离存储"""
 import json
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
 from agno.tools import Toolkit
 
-EXPENSES_FILE = Path(__file__).parent.parent / "data" / "expenses.json"
-EXPENSES_FILE.parent.mkdir(parents=True, exist_ok=True)
+DATA_DIR = Path(__file__).parent.parent / "data"
+DATA_DIR.mkdir(parents=True, exist_ok=True)
 
 
-def _load_expenses_for_read() -> dict:
-    """加载收支数据用于查询：mock 数据 + 用户新增数据合并返回"""
+def _get_user_expenses_file(user_id: str) -> Path:
+    """按 user_id 返回隔离的收支文件路径"""
+    safe_id = user_id.replace("/", "_").replace("..", "_")
+    return DATA_DIR / f"expenses_{safe_id}.json"
+
+
+def _load_expenses_for_read(user_id: str = "default_user") -> dict:
+    """加载收支数据用于查询：mock 数据 + 当前用户数据合并返回"""
     # 加载 mock 数据
     try:
         from data.mock_data import DEFAULT_EXPENSES
@@ -18,11 +24,12 @@ def _load_expenses_for_read() -> dict:
     except ImportError:
         mock_records = []
 
-    # 加载用户文件数据
+    # 加载用户隔离文件
     user_records = []
-    if EXPENSES_FILE.exists():
+    user_file = _get_user_expenses_file(user_id)
+    if user_file.exists():
         try:
-            data = json.loads(EXPENSES_FILE.read_text(encoding="utf-8"))
+            data = json.loads(user_file.read_text(encoding="utf-8"))
             user_records = data.get("records", [])
         except (json.JSONDecodeError, KeyError):
             pass
@@ -40,11 +47,12 @@ def _load_expenses_for_read() -> dict:
     }
 
 
-def _load_expenses_for_write() -> dict:
-    """加载收支数据用于写入，绝不加载 mock 数据"""
-    if EXPENSES_FILE.exists():
+def _load_expenses_for_write(user_id: str = "default_user") -> dict:
+    """加载用户隔离文件用于写入，绝不加载 mock 数据"""
+    user_file = _get_user_expenses_file(user_id)
+    if user_file.exists():
         try:
-            data = json.loads(EXPENSES_FILE.read_text(encoding="utf-8"))
+            data = json.loads(user_file.read_text(encoding="utf-8"))
             if data.get("records") and len(data["records"]) > 0:
                 return data
         except (json.JSONDecodeError, KeyError):
@@ -52,8 +60,9 @@ def _load_expenses_for_write() -> dict:
     return {"records": [], "monthly_summary": {"total_expense": 0, "total_income": 0}}
 
 
-def _save_expenses(data: dict):
-    EXPENSES_FILE.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+def _save_expenses(data: dict, user_id: str = "default_user"):
+    user_file = _get_user_expenses_file(user_id)
+    user_file.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
 class DiaryToLedgerTool(Toolkit):
@@ -63,7 +72,7 @@ class DiaryToLedgerTool(Toolkit):
         self.register(self.record_income)
         self.register(self.get_daily_summary)
 
-    def record_expense(self, category: str, amount: float, description: str = "", date: Optional[str] = None) -> str:
+    def record_expense(self, category: str, amount: float, description: str = "", date: Optional[str] = None, user_id: str = "default_user") -> str:
         """记录一笔支出。当用户说了花钱/消费/买东西等信息时调用。
 
         Args:
@@ -71,11 +80,12 @@ class DiaryToLedgerTool(Toolkit):
             amount: 金额（数字）
             description: 具体描述，如"中午吃了麻辣烫"
             date: 日期，格式 YYYY-MM-DD，默认今天
+            user_id: 用户标识，用于数据隔离
 
         Returns:
             记录结果
         """
-        data = _load_expenses_for_write()
+        data = _load_expenses_for_write(user_id)
         record = {
             "category": category,
             "amount": amount,
@@ -86,7 +96,7 @@ class DiaryToLedgerTool(Toolkit):
         }
         data["records"].insert(0, record)
         data["monthly_summary"]["total_expense"] = data["monthly_summary"].get("total_expense", 0) + amount
-        _save_expenses(data)
+        _save_expenses(data, user_id)
 
         return json.dumps({
             "success": True,
@@ -95,7 +105,7 @@ class DiaryToLedgerTool(Toolkit):
             "message": f"已记录支出 ¥{amount}（{category}：{description}）"
         }, ensure_ascii=False)
 
-    def record_income(self, category: str, amount: float, description: str = "", date: Optional[str] = None) -> str:
+    def record_income(self, category: str, amount: float, description: str = "", date: Optional[str] = None, user_id: str = "default_user") -> str:
         """记录一笔收入。当用户说了赚钱/收到/进账/工资/生活费等信息时调用。
 
         Args:
@@ -103,11 +113,12 @@ class DiaryToLedgerTool(Toolkit):
             amount: 金额（数字）
             description: 具体描述
             date: 日期，格式 YYYY-MM-DD，默认今天
+            user_id: 用户标识，用于数据隔离
 
         Returns:
             记录结果
         """
-        data = _load_expenses_for_write()
+        data = _load_expenses_for_write(user_id)
         record = {
             "category": category,
             "amount": amount,
@@ -118,7 +129,7 @@ class DiaryToLedgerTool(Toolkit):
         }
         data["records"].insert(0, record)
         data["monthly_summary"]["total_income"] = data["monthly_summary"].get("total_income", 0) + amount
-        _save_expenses(data)
+        _save_expenses(data, user_id)
 
         return json.dumps({
             "success": True,
@@ -127,17 +138,18 @@ class DiaryToLedgerTool(Toolkit):
             "message": f"已记录收入 ¥{amount}（{category}：{description}）"
         }, ensure_ascii=False)
 
-    def get_daily_summary(self, start_date: Optional[str] = None, end_date: Optional[str] = None) -> str:
+    def get_daily_summary(self, start_date: Optional[str] = None, end_date: Optional[str] = None, user_id: str = "default_user") -> str:
         """获取收支记录。可按日期范围筛选。不传参数则返回全部记录。
 
         Args:
             start_date: 起始日期，格式 YYYY-MM-DD（含），如 "2026-02-18"
             end_date: 结束日期，格式 YYYY-MM-DD（含），如 "2026-05-18"
+            user_id: 用户标识，用于数据隔离
 
         Returns:
             符合条件的收支记录和汇总
         """
-        data = _load_expenses_for_read()
+        data = _load_expenses_for_read(user_id)
         records = data.get("records", [])
 
         # 按日期范围筛选

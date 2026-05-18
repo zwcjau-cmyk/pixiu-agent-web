@@ -6,4 +6,6 @@ data/pixiu.db
 data/treasure_shelf*.json
 data/*_script_state.json
 data/expenses.json
+data/expenses_*.json
 data/vault.json
+data/vault_*.json
