@@ -1,0 +1,29 @@
+.gitignore
+  73e9f1f5b042bd5a 9,11
+tools/vault_manager.py
+  73e9f1f5b042bd5a 1,3,8-9,27-30,33-42,52,55-57,61,64,73,78,85,95,101,106,113,125
+tools/diary_ledger.py
+  73e9f1f5b042bd5a 1,8-9,12-19,27,29-30,32,50-53,55,63-65,75,83,88,99,108,116,121,132,141,147,152
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "2899364a17778ec471157876c398fbdd4db8b52b",
+  "prompts": {
+    "73e9f1f5b042bd5a": {
+      "agent_id": {
+        "tool": "trae",
+        "id": "6a0b812f647367669876e803",
+        "model": "c_o_new__dev"
+      },
+      "human_author": "xingchaoran <xingchaoran@bytedance.com>",
+      "messages": [],
+      "total_additions": 126,
+      "total_deletions": 72,
+      "accepted_lines": 68,
+      "overriden_lines": 0
+    }
+  },
+  "attestation_metadata": {},
+  "remote_transcripts": {}
+}
