@@ -14,6 +14,7 @@ load_dotenv()
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 from agno.agent import Agent
@@ -99,22 +100,35 @@ class ChatResponse(BaseModel):
     session_id: str
 
 
-@app.post("/api/chat", response_model=ChatResponse)
+@app.post("/api/chat")
 async def chat_endpoint(req: ChatRequest):
-    """与貔貅学长对话"""
+    """与貔貅学长对话 - SSE 流式输出"""
     # 每次请求动态更新日期，确保跨天后日期正确
     today_str = _dt.now().strftime("%Y-%m-%d")
     base_prompt = SOUL_PATH.read_text(encoding="utf-8")
     pixiu_agent.instructions = [base_prompt + _date_template.format(today=today_str)]
 
-    response = pixiu_agent.run(
-        req.message,
-        user_id=req.user_id,
-        session_id=req.session_id,
-    )
-    return ChatResponse(
-        reply=response.content,
-        session_id=req.session_id,
+    def event_stream():
+        response_stream = pixiu_agent.run(
+            req.message,
+            user_id=req.user_id,
+            session_id=req.session_id,
+            stream=True,
+        )
+        for chunk in response_stream:
+            if hasattr(chunk, 'content') and chunk.content:
+                yield f"data: {json.dumps({'token': chunk.content}, ensure_ascii=False)}\n\n"
+        # 结束标记
+        yield f"data: {json.dumps({'done': True, 'session_id': req.session_id})}\n\n"
+
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
     )
 
 
@@ -292,23 +306,27 @@ async def record_expense(req: ExpenseRecord):
 
 @app.get("/api/expense/summary")
 async def get_expense_summary():
-    """获取收支汇总（返回全部记录供日历使用）"""
-    data = _load_json(EXPENSES_FILE)
-    if not data or not data.get("records"):
-        data = _DEFAULT_EXPENSES
+    """获取收支汇总（返回全部记录供日历使用）—— 始终合并 mock + 用户数据"""
+    user_data = _load_json(EXPENSES_FILE)
+    user_records = user_data.get("records", []) if user_data else []
+    mock_records = _DEFAULT_EXPENSES.get("records", [])
+    all_records = user_records + mock_records
+
+    total_expense = sum(r["amount"] for r in all_records if r.get("type") == "expense")
+    total_income = sum(r["amount"] for r in all_records if r.get("type") == "income")
     return {
-        "records": data.get("records", []),
-        "monthly_summary": data.get("monthly_summary", {"total_expense": 0, "total_income": 0}),
+        "records": all_records,
+        "monthly_summary": {"total_expense": total_expense, "total_income": total_income},
     }
 
 
 @app.get("/api/expense/day/{date}")
 async def get_expense_by_day(date: str):
     """获取某一天的收支明细，date格式：2026-05-16"""
-    data = _load_json(EXPENSES_FILE)
-    if not data or not data.get("records"):
-        data = _DEFAULT_EXPENSES
-    all_records = data.get("records", [])
+    user_data = _load_json(EXPENSES_FILE)
+    user_records = user_data.get("records", []) if user_data else []
+    mock_records = _DEFAULT_EXPENSES.get("records", [])
+    all_records = user_records + mock_records
 
     # 筛选当天记录
     day_records = [r for r in all_records if r.get("date") == date]
@@ -476,47 +494,72 @@ class ScriptChatResponse(BaseModel):
     image_url: Optional[str] = None
 
 
-@app.post("/api/script/chat", response_model=ScriptChatResponse)
+@app.post("/api/script/chat")
 async def script_chat_endpoint(req: ScriptChatRequest):
-    """统一对话入口：所有指令（存钱/省钱/激活/创作/查进度/闲聊）都通过自然对话下达"""
+    """统一对话入口 - SSE 流式输出"""
     import re
     agent = create_script_agent(req.user_id)
-    response = agent.run(
-        req.message,
-        user_id=req.user_id,
-        session_id=req.session_id,
-    )
 
-    image_url = None
-    reply_text = response.content or ""
+    def event_stream():
+        # 流式获取 Agent 回复
+        full_text = ""
+        tool_outputs = []
+        response_stream = agent.run(
+            req.message,
+            user_id=req.user_id,
+            session_id=req.session_id,
+            stream=True,
+        )
+        for chunk in response_stream:
+            if hasattr(chunk, 'content') and chunk.content:
+                full_text += chunk.content
+                yield f"data: {json.dumps({'token': chunk.content}, ensure_ascii=False)}\n\n"
+            # 捕获工具调用结果
+            if hasattr(chunk, 'tool_call_content') and chunk.tool_call_content:
+                tool_outputs.append(str(chunk.tool_call_content))
+            if hasattr(chunk, 'messages') and chunk.messages:
+                for msg in chunk.messages:
+                    if hasattr(msg, 'content') and msg.content:
+                        tool_outputs.append(str(msg.content))
 
-    # 1. 先从 Agent 的回复/工具返回中提取图片 URL（如果 Agent 成功调了工具）
-    if hasattr(response, 'messages') and response.messages:
-        for msg in response.messages:
-            if hasattr(msg, 'content') and msg.content and 'image_url' in str(msg.content):
-                url_match = re.search(r'"image_url"\s*:\s*"(https?://[^"]+)"', str(msg.content))
+        # 流结束后，尝试从完整回复和工具输出中提取图片 URL
+        image_url = None
+
+        # 先从工具输出中找
+        for output in tool_outputs:
+            if 'image_url' in output:
+                url_match = re.search(r'"image_url"\s*:\s*"(https?://[^"]+)"', output)
                 if url_match:
                     image_url = url_match.group(1)
                     break
 
-    if not image_url:
-        url_match = re.search(r'"image_url"\s*:\s*"(https?://[^"]+)"', reply_text)
-        if url_match:
-            image_url = url_match.group(1)
+        # 从 response_stream 的 response 属性找
+        if not image_url:
+            if hasattr(response_stream, 'response') and response_stream.response:
+                resp = response_stream.response
+                if hasattr(resp, 'messages') and resp.messages:
+                    for msg in resp.messages:
+                        if hasattr(msg, 'content') and msg.content and 'image_url' in str(msg.content):
+                            url_match = re.search(r'"image_url"\s*:\s*"(https?://[^"]+)"', str(msg.content))
+                            if url_match:
+                                image_url = url_match.group(1)
+                                break
 
-    if not image_url:
-        url_match = re.search(r'(https?://[^\s"\'<>]+\.(?:png|jpg|jpeg|webp)[^\s"\'<>]*)', reply_text)
-        if url_match:
-            image_url = url_match.group(1)
+        # 从完整文本中找
+        if not image_url:
+            url_match = re.search(r'"image_url"\s*:\s*"(https?://[^"]+)"', full_text)
+            if url_match:
+                image_url = url_match.group(1)
 
-    # 2. 如果 Agent 没调工具生成图片，但用户消息包含省钱/存钱意图，后端强制生成
-    if not image_url:
-        save_keywords = ['忍住', '没买', '省了', '省下', '拒绝', '存了', '入账', '往里放', '攒了']
-        user_msg_lower = req.message
-        is_save_or_deposit = any(kw in user_msg_lower for kw in save_keywords)
+        if not image_url:
+            url_match = re.search(r'(https?://[^\s"\'<>]+\.(?:png|jpg|jpeg|webp)[^\s"\'<>]*)', full_text)
+            if url_match:
+                image_url = url_match.group(1)
 
-        if is_save_or_deposit and reply_text:
-            # 从 Agent 回复中提取剧本世界的场景描述（取第一句有实际内容的话作为 scene）
+        # 后端强制补图逻辑：只要有正常对话内容就生成漫画
+        if not image_url and full_text and len(full_text.strip()) > 20:
+            # 通知前端正在生成图片
+            yield f"data: {json.dumps({'generating_image': True}, ensure_ascii=False)}\n\n"
             from tools.generate_comic import GenerateComicPlotTool
             from memory.script_state import ScriptState
 
@@ -524,62 +567,46 @@ async def script_chat_endpoint(req: ScriptChatRequest):
             script_id = state.state.get("active_script_id")
 
             if script_id:
-                # 从回复中提取 Agent 编造的剧本世界用途
-                # Agent 回复通常包含"这笔钱用来..."的描述
-                scene_hint = reply_text[:200]  # 取前200字作为场景线索
-
-                # 用一个简单的 prompt 让 pro 模型生成 scene_description 和 episode_title
+                scene_hint = full_text[:200]
                 from openai import OpenAI
                 from config import MODEL_PRO
                 client = OpenAI(api_key=ARK_API_KEY, base_url=ARK_BASE_URL)
 
-                extract_resp = client.chat.completions.create(
-                    model=MODEL_PRO,
-                    messages=[{
-                        "role": "user",
-                        "content": f"根据下面这段角色对话，提取出剧本世界里发生的场景，用于生成一张插画。\n\n对话内容：{scene_hint}\n\n请直接输出JSON，格式：{{\"scene_description\": \"具体的画面描述，包含人物、动作、环境、色调\", \"episode_title\": \"情节标题，如逆袭进展之：XXX\"}}"
-                    }],
-                    temperature=0.7,
-                )
-                extract_text = extract_resp.choices[0].message.content or ""
-
                 try:
-                    # 提取 JSON
+                    extract_resp = client.chat.completions.create(
+                        model=MODEL_PRO,
+                        messages=[{
+                            "role": "user",
+                            "content": f"根据下面这段角色对话，提取出剧本世界里发生的场景，用于生成一张插画。\n\n对话内容：{scene_hint}\n\n请直接输出JSON，格式：{{\"scene_description\": \"具体的画面描述，包含人物、动作、环境、色调\", \"episode_title\": \"情节标题，如逆袭进展之：XXX\"}}"
+                        }],
+                        temperature=0.7,
+                    )
+                    extract_text = extract_resp.choices[0].message.content or ""
                     json_match = re.search(r'\{[^}]+\}', extract_text)
                     if json_match:
-                        import json as json_mod
-                        scene_data = json_mod.loads(json_match.group())
+                        scene_data = json.loads(json_match.group())
                         scene_desc = scene_data.get("scene_description", "")
                         ep_title = scene_data.get("episode_title", "剧情进展")
-
                         if scene_desc:
                             comic_tool = GenerateComicPlotTool()
                             result_json = comic_tool.generate_story_comic(scene_desc, ep_title)
-                            result_data = json_mod.loads(result_json)
+                            result_data = json.loads(result_json)
                             if result_data.get("success"):
                                 image_url = result_data["image_url"]
                 except Exception:
-                    pass  # 图片生成失败不影响主流程
+                    pass
 
-    # 清理回复文本
-    if image_url:
-        cleanup_patterns = [
-            r'看[呐啊].*?漫画.*?[！!🤩😍✨]+',
-            r'快来看.*?[！!]',
-            r'双面漫画已生成.*?[！!]',
-            r'剧情海报.*?已生成.*?[！!]',
-            r'漫画.*?[来啦了].*?[！!🤩😍✨]+',
-        ]
-        for pattern in cleanup_patterns:
-            reply_text = re.sub(pattern, '', reply_text)
-        reply_text = re.sub(r'\{[^}]*"image_url"[^}]*\}', '', reply_text)
-        reply_text = re.sub(r'"image_url"\s*:\s*"https?://[^"]*"', '', reply_text)
-        reply_text = reply_text.strip()
+        # 发送结束事件（包含 image_url）
+        yield f"data: {json.dumps({'done': True, 'session_id': req.session_id, 'image_url': image_url}, ensure_ascii=False)}\n\n"
 
-    return ScriptChatResponse(
-        reply=reply_text,
-        session_id=req.session_id,
-        image_url=image_url,
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
     )
 
 

@@ -10,7 +10,7 @@ from agno.agent import Agent
 from agno.models.openai.like import OpenAILike
 from agno.db.sqlite import SqliteDb
 
-from config import ARK_API_KEY, ARK_BASE_URL, MODEL_PRO
+from config import ARK_API_KEY, ARK_BASE_URL, MODEL_PRO, MODEL_CHARACTER
 from tools.check_plot_progress import CheckPlotProgressTool
 from tools.generate_comic import GenerateComicPlotTool
 from tools.script_writer import ScriptWriterTool
@@ -164,7 +164,7 @@ def create_script_agent(user_id: str = "default_user") -> Agent:
     agent = Agent(
         name="剧情导向Agent",
         model=OpenAILike(
-            id=MODEL_PRO,
+            id=MODEL_CHARACTER,
             api_key=ARK_API_KEY,
             base_url=ARK_BASE_URL,
         ),
