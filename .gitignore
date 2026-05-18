@@ -3,3 +3,7 @@ __pycache__/
 *.pyc
 .env
 data/pixiu.db
+data/treasure_shelf*.json
+data/*_script_state.json
+data/expenses.json
+data/vault.json

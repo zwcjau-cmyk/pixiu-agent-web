@@ -9,9 +9,46 @@ EXPENSES_FILE = Path(__file__).parent.parent / "data" / "expenses.json"
 EXPENSES_FILE.parent.mkdir(parents=True, exist_ok=True)
 
 
-def _load_expenses() -> dict:
+def _load_expenses_for_read() -> dict:
+    """加载收支数据用于查询：mock 数据 + 用户新增数据合并返回"""
+    # 加载 mock 数据
+    try:
+        from data.mock_data import DEFAULT_EXPENSES
+        mock_records = DEFAULT_EXPENSES.get("records", [])
+    except ImportError:
+        mock_records = []
+
+    # 加载用户文件数据
+    user_records = []
     if EXPENSES_FILE.exists():
-        return json.loads(EXPENSES_FILE.read_text(encoding="utf-8"))
+        try:
+            data = json.loads(EXPENSES_FILE.read_text(encoding="utf-8"))
+            user_records = data.get("records", [])
+        except (json.JSONDecodeError, KeyError):
+            pass
+
+    # 合并：用户新数据在前，mock 在后
+    all_records = user_records + mock_records
+
+    # 重新计算汇总
+    total_expense = sum(r["amount"] for r in all_records if r.get("type") == "expense")
+    total_income = sum(r["amount"] for r in all_records if r.get("type") == "income")
+
+    return {
+        "records": all_records,
+        "monthly_summary": {"total_expense": total_expense, "total_income": total_income}
+    }
+
+
+def _load_expenses_for_write() -> dict:
+    """加载收支数据用于写入，绝不加载 mock 数据"""
+    if EXPENSES_FILE.exists():
+        try:
+            data = json.loads(EXPENSES_FILE.read_text(encoding="utf-8"))
+            if data.get("records") and len(data["records"]) > 0:
+                return data
+        except (json.JSONDecodeError, KeyError):
+            pass
     return {"records": [], "monthly_summary": {"total_expense": 0, "total_income": 0}}
 
 
@@ -38,7 +75,7 @@ class DiaryToLedgerTool(Toolkit):
         Returns:
             记录结果
         """
-        data = _load_expenses()
+        data = _load_expenses_for_write()
         record = {
             "category": category,
             "amount": amount,
@@ -70,7 +107,7 @@ class DiaryToLedgerTool(Toolkit):
         Returns:
             记录结果
         """
-        data = _load_expenses()
+        data = _load_expenses_for_write()
         record = {
             "category": category,
             "amount": amount,
@@ -90,14 +127,42 @@ class DiaryToLedgerTool(Toolkit):
             "message": f"已记录收入 ¥{amount}（{category}：{description}）"
         }, ensure_ascii=False)
 
-    def get_daily_summary(self, date: Optional[str] = None) -> str:
-        """获取收支汇总，了解用户本月的收支情况。
+    def get_daily_summary(self, start_date: Optional[str] = None, end_date: Optional[str] = None) -> str:
+        """获取收支记录。可按日期范围筛选。不传参数则返回全部记录。
+
+        Args:
+            start_date: 起始日期，格式 YYYY-MM-DD（含），如 "2026-02-18"
+            end_date: 结束日期，格式 YYYY-MM-DD（含），如 "2026-05-18"
 
         Returns:
-            收支汇总数据
+            符合条件的收支记录和汇总
         """
-        data = _load_expenses()
+        data = _load_expenses_for_read()
+        records = data.get("records", [])
+
+        # 按日期范围筛选
+        if start_date or end_date:
+            filtered = []
+            for r in records:
+                d = r.get("date", "")
+                if start_date and d < start_date:
+                    continue
+                if end_date and d > end_date:
+                    continue
+                filtered.append(r)
+            records = filtered
+
+        # 计算筛选后的汇总
+        total_expense = sum(r["amount"] for r in records if r.get("type") == "expense")
+        total_income = sum(r["amount"] for r in records if r.get("type") == "income")
+
         return json.dumps({
-            "records": data.get("records", [])[:20],
-            "monthly_summary": data.get("monthly_summary", {"total_expense": 0, "total_income": 0}),
+            "records": records,
+            "summary": {
+                "total_expense": total_expense,
+                "total_income": total_income,
+                "net": total_income - total_expense,
+                "record_count": len(records),
+                "date_range": f"{start_date or '最早'} ~ {end_date or '最新'}"
+            }
         }, ensure_ascii=False)

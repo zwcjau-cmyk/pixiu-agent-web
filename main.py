@@ -33,10 +33,12 @@ from script_agent import create_script_agent
 SOUL_PATH = Path(__file__).parent / "soul.md"
 soul_prompt = SOUL_PATH.read_text(encoding="utf-8")
 
-# 注入当前日期，确保 Agent 知道今天是哪天
+# 注入当前日期的模板（每次请求时动态替换）
 from datetime import datetime as _dt
+_date_template = "\n\n---\n## 系统信息\n- 今天的日期是：{today}\n- 当用户提到\"今天\"的收支时，日期参数必须使用 {today}\n- 当用户没有明确说日期时，默认使用今天的日期 {today}\n"
+# 启动时先注入一次
 _today = _dt.now().strftime("%Y-%m-%d")
-soul_prompt += f"\n\n---\n## 系统信息\n- 今天的日期是：{_today}\n- 当用户提到\"今天\"的收支时，日期参数必须使用 {_today}\n- 当用户没有明确说日期时，默认使用今天的日期 {_today}\n"
+soul_prompt += _date_template.format(today=_today)
 
 # 数据库路径
 DB_PATH = Path(__file__).parent / "data" / "pixiu.db"
@@ -100,6 +102,11 @@ class ChatResponse(BaseModel):
 @app.post("/api/chat", response_model=ChatResponse)
 async def chat_endpoint(req: ChatRequest):
     """与貔貅学长对话"""
+    # 每次请求动态更新日期，确保跨天后日期正确
+    today_str = _dt.now().strftime("%Y-%m-%d")
+    base_prompt = SOUL_PATH.read_text(encoding="utf-8")
+    pixiu_agent.instructions = [base_prompt + _date_template.format(today=today_str)]
+
     response = pixiu_agent.run(
         req.message,
         user_id=req.user_id,
@@ -125,6 +132,7 @@ class StickerRequest(BaseModel):
     image_base64: str  # 商品图片的 base64 编码
     product_name: Optional[str] = None  # 可选，用户手动输入的名称
     product_price: Optional[float] = None  # 可选，用户手动输入的价格
+    user_id: str = "default_user"  # 用户标识，用于数据隔离
 
 
 class StickerResponse(BaseModel):
@@ -182,6 +190,7 @@ async def create_sticker(req: StickerRequest):
             price=product_price,
             sticker_url=sticker_url,
             category=product_category,
+            user_id=req.user_id,
         )
     )
 
@@ -198,10 +207,10 @@ async def create_sticker(req: StickerRequest):
 
 
 @app.get("/api/sticker/shelf")
-async def get_shelf():
+async def get_shelf(user_id: str = "default_user"):
     """获取藏宝阁储物架数据"""
     import json as _json
-    return _json.loads(sticker_tool.get_treasure_shelf())
+    return _json.loads(sticker_tool.get_treasure_shelf(user_id=user_id))
 
 
 # ============ 收支记录 API ============
@@ -209,10 +218,18 @@ async def get_shelf():
 EXPENSES_FILE = Path(__file__).parent / "data" / "expenses.json"
 VAULT_FILE = Path(__file__).parent / "data" / "vault.json"
 
+from data.mock_data import DEFAULT_EXPENSES as _DEFAULT_EXPENSES
+from data.mock_data import DEFAULT_VAULT as _DEFAULT_VAULT
+
 
 def _load_json(filepath: Path) -> dict:
     if filepath.exists():
-        return json.loads(filepath.read_text(encoding="utf-8"))
+        content = filepath.read_text(encoding="utf-8").strip()
+        if content:
+            data = json.loads(content)
+            # 如果文件存在但内容是空壳（无实际记录），返回空让 fallback 生效
+            if data:
+                return data
     return {}
 
 
@@ -277,6 +294,8 @@ async def record_expense(req: ExpenseRecord):
 async def get_expense_summary():
     """获取收支汇总（返回全部记录供日历使用）"""
     data = _load_json(EXPENSES_FILE)
+    if not data or not data.get("records"):
+        data = _DEFAULT_EXPENSES
     return {
         "records": data.get("records", []),
         "monthly_summary": data.get("monthly_summary", {"total_expense": 0, "total_income": 0}),
@@ -287,6 +306,8 @@ async def get_expense_summary():
 async def get_expense_by_day(date: str):
     """获取某一天的收支明细，date格式：2026-05-16"""
     data = _load_json(EXPENSES_FILE)
+    if not data or not data.get("records"):
+        data = _DEFAULT_EXPENSES
     all_records = data.get("records", [])
 
     # 筛选当天记录
@@ -321,20 +342,8 @@ async def update_vault(req: VaultUpdate):
     """更新金库资产或梦想清单进度"""
     data = _load_json(VAULT_FILE)
     if not data:
-        data = {
-            "total_assets": 13579.30,
-            "monthly_growth": 856,
-            "accounts": {
-                "active_pool": {"label": "活期池", "balance": 3428.50, "rate": "1.8%"},
-                "fixed_deposit": {"label": "定期舱", "balance": 8000.00, "rate": "3.2%", "term": "90天"},
-                "fund_collection": {"label": "基金图鉴", "balance": 2150.80, "rate": "+2.3%"}
-            },
-            "goals": [
-                {"name": "AirPods Pro", "target": 1799, "current": 1295, "emoji": "🎧"},
-                {"name": "毕业旅行基金", "target": 5000, "current": 2250, "emoji": "✈️"},
-                {"name": "新款iPad", "target": 3499, "current": 980, "emoji": "📱"}
-            ]
-        }
+        import copy
+        data = copy.deepcopy(_DEFAULT_VAULT)
 
     message_parts = []
 
@@ -395,20 +404,7 @@ async def get_vault_status():
     """获取金库完整状态"""
     data = _load_json(VAULT_FILE)
     if not data:
-        data = {
-            "total_assets": 13579.30,
-            "monthly_growth": 856,
-            "accounts": {
-                "active_pool": {"label": "活期池", "balance": 3428.50, "rate": "1.8%"},
-                "fixed_deposit": {"label": "定期舱", "balance": 8000.00, "rate": "3.2%", "term": "90天"},
-                "fund_collection": {"label": "基金图鉴", "balance": 2150.80, "rate": "+2.3%"}
-            },
-            "goals": [
-                {"name": "AirPods Pro", "target": 1799, "current": 1295, "emoji": "🎧"},
-                {"name": "毕业旅行基金", "target": 5000, "current": 2250, "emoji": "✈️"},
-                {"name": "新款iPad", "target": 3499, "current": 980, "emoji": "📱"}
-            ]
-        }
+        data = _DEFAULT_VAULT
     return data
 
 
@@ -416,6 +412,8 @@ async def get_vault_status():
 async def get_account_detail(account_id: str):
     """获取某个账户的详细信息（产品明细、交易记录等）"""
     data = _load_json(VAULT_FILE)
+    if not data:
+        data = _DEFAULT_VAULT
     accounts = data.get("accounts", {})
     if account_id not in accounts:
         return {"success": False, "message": f"账户 {account_id} 不存在"}

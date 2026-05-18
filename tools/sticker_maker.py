@@ -14,9 +14,9 @@ from config import ARK_API_KEY, ARK_BASE_URL, MODEL_VISION
 STICKER_OUTPUT_DIR = Path(__file__).parent.parent / "stickers"
 STICKER_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-# 藏宝阁数据文件
-TREASURE_DATA_FILE = Path(__file__).parent.parent / "data" / "treasure_shelf.json"
-TREASURE_DATA_FILE.parent.mkdir(parents=True, exist_ok=True)
+# 藏宝阁数据目录（按 user_id 隔离）
+TREASURE_DATA_DIR = Path(__file__).parent.parent / "data"
+TREASURE_DATA_DIR.mkdir(parents=True, exist_ok=True)
 
 
 class StickerMakerTool(Toolkit):
@@ -206,6 +206,7 @@ class StickerMakerTool(Toolkit):
         price: float,
         sticker_url: str,
         category: str = "其他",
+        user_id: str = "default_user",
     ) -> str:
         """将新宝物添加到藏宝阁的虚拟储物架。
         
@@ -214,13 +215,14 @@ class StickerMakerTool(Toolkit):
             price: 商品价格
             sticker_url: 贴纸图片 URL 路径
             category: 商品类别
+            user_id: 用户标识，用于数据隔离
         
         Returns:
             JSON 字符串，包含添加结果和当前已省金额
         """
         try:
             # 读取现有数据
-            shelf_data = self._load_shelf()
+            shelf_data = self._load_shelf(user_id)
             
             # 新增宝物
             new_item = {
@@ -236,7 +238,7 @@ class StickerMakerTool(Toolkit):
             shelf_data["total_saved"] = sum(item["price"] for item in shelf_data["items"])
             
             # 保存
-            self._save_shelf(shelf_data)
+            self._save_shelf(shelf_data, user_id)
             
             return json.dumps({
                 "success": True,
@@ -254,13 +256,16 @@ class StickerMakerTool(Toolkit):
                 "message": "添加宝物失败，请重试"
             }, ensure_ascii=False)
 
-    def get_treasure_shelf(self) -> str:
+    def get_treasure_shelf(self, user_id: str = "default_user") -> str:
         """获取当前虚拟储物架的所有宝物列表。
+        
+        Args:
+            user_id: 用户标识，用于数据隔离
         
         Returns:
             JSON 字符串，包含所有宝物和总省金额
         """
-        shelf_data = self._load_shelf()
+        shelf_data = self._load_shelf(user_id)
         return json.dumps({
             "success": True,
             "items": shelf_data["items"],
@@ -268,15 +273,21 @@ class StickerMakerTool(Toolkit):
             "total_items": len(shelf_data["items"]),
         }, ensure_ascii=False)
 
-    def _load_shelf(self) -> dict:
+    def _get_shelf_file(self, user_id: str) -> Path:
+        """获取用户对应的藏宝阁数据文件路径"""
+        return TREASURE_DATA_DIR / f"treasure_shelf_{user_id}.json"
+
+    def _load_shelf(self, user_id: str = "default_user") -> dict:
         """加载储物架数据"""
-        if TREASURE_DATA_FILE.exists():
-            return json.loads(TREASURE_DATA_FILE.read_text(encoding="utf-8"))
+        shelf_file = self._get_shelf_file(user_id)
+        if shelf_file.exists():
+            return json.loads(shelf_file.read_text(encoding="utf-8"))
         return {"items": [], "total_saved": 0}
 
-    def _save_shelf(self, data: dict):
+    def _save_shelf(self, data: dict, user_id: str = "default_user"):
         """保存储物架数据"""
-        TREASURE_DATA_FILE.write_text(
+        shelf_file = self._get_shelf_file(user_id)
+        shelf_file.write_text(
             json.dumps(data, ensure_ascii=False, indent=2),
             encoding="utf-8"
         )
