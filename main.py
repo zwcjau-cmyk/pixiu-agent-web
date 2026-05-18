@@ -45,6 +45,10 @@ soul_prompt += _date_template.format(today=_today)
 DB_PATH = Path(__file__).parent / "data" / "pixiu.db"
 DB_PATH.parent.mkdir(parents=True, exist_ok=True)
 
+# 初始化工具实例（需要在请求时动态设置 user_id）
+_diary_tool = DiaryToLedgerTool()
+_vault_tool = VaultManagerTool()
+
 # 初始化 SOLO Agent
 pixiu_agent = Agent(
     name="貔貅学长",
@@ -56,8 +60,8 @@ pixiu_agent = Agent(
     description="貔貅学长 - 你的赛博理财引路人",
     instructions=[soul_prompt],
     tools=[
-        DiaryToLedgerTool(),
-        VaultManagerTool(),
+        _diary_tool,
+        _vault_tool,
         UIControlTool(),
         ImageGeneratorTool(),
         SpeechRecognizerTool(),
@@ -106,8 +110,11 @@ async def chat_endpoint(req: ChatRequest):
     # 每次请求动态更新日期，确保跨天后日期正确
     today_str = _dt.now().strftime("%Y-%m-%d")
     base_prompt = SOUL_PATH.read_text(encoding="utf-8")
-    user_id_instruction = f"\n\n---\n## 用户标识\n- 当前用户的 user_id 是 \"{req.user_id}\"\n- 调用所有工具时，如果工具有 user_id 参数，必须传 \"{req.user_id}\"\n- 包括但不限于：record_expense、record_income、get_daily_summary、get_vault_status、deposit_to_account、update_goal_progress\n"
-    pixiu_agent.instructions = [base_prompt + _date_template.format(today=today_str) + user_id_instruction]
+    pixiu_agent.instructions = [base_prompt + _date_template.format(today=today_str)]
+
+    # 自动注入 user_id 到工具实例，不依赖 LLM 传参
+    _diary_tool._current_user_id = req.user_id
+    _vault_tool._current_user_id = req.user_id
 
     def event_stream():
         response_stream = pixiu_agent.run(

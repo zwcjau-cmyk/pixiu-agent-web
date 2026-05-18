@@ -8,20 +8,8 @@ from agno.tools import Toolkit
 DATA_DIR = Path(__file__).parent.parent / "data"
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 
-DEFAULT_VAULT = {
-    "total_assets": 13579.30,
-    "monthly_growth": 856,
-    "accounts": {
-        "active_pool": {"label": "活期池", "balance": 3428.50, "rate": "1.8%"},
-        "fixed_deposit": {"label": "定期舱", "balance": 8000.00, "rate": "3.2%", "term": "90天"},
-        "fund_collection": {"label": "基金图鉴", "balance": 2150.80, "rate": "+2.3%"}
-    },
-    "goals": [
-        {"name": "AirPods Pro", "target": 1799, "current": 1295, "emoji": "🎧"},
-        {"name": "毕业旅行基金", "target": 5000, "current": 2250, "emoji": "✈️"},
-        {"name": "新款iPad", "target": 3499, "current": 980, "emoji": "📱"}
-    ]
-}
+# 使用 mock_data.py 中的完整版 DEFAULT_VAULT（含 products/transactions/principal/monthly_profit）
+from data.mock_data import DEFAULT_VAULT
 
 
 def _get_user_vault_file(user_id: str) -> Path:
@@ -45,23 +33,21 @@ def _save_vault(data: dict, user_id: str = "default_user"):
 class VaultManagerTool(Toolkit):
     def __init__(self):
         super().__init__(name="vault_manager")
+        self._current_user_id = "default_user"
         self.register(self.get_vault_status)
         self.register(self.deposit_to_account)
         self.register(self.update_goal_progress)
 
-    def get_vault_status(self, user_id: str = "default_user") -> str:
+    def get_vault_status(self) -> str:
         """获取用户金库的整体状态，包括总资产、活期池、定期舱、基金图鉴的余额以及梦想清单进度。
-
-        Args:
-            user_id: 用户标识，用于数据隔离
 
         Returns:
             金库完整状态 JSON
         """
-        data = _load_vault(user_id)
+        data = _load_vault(self._current_user_id)
         return json.dumps(data, ensure_ascii=False)
 
-    def deposit_to_account(self, account: str, amount: float, user_id: str = "default_user") -> str:
+    def deposit_to_account(self, account: str, amount: float) -> str:
         """存钱到指定账户。当用户说存了钱/转入/充值到某个账户时调用。
 
         Args:
@@ -70,11 +56,11 @@ class VaultManagerTool(Toolkit):
                 - "fixed_deposit"（定期舱）
                 - "fund_collection"（基金图鉴）
             amount: 存入金额（正数表示存入，负数表示取出）
-            user_id: 用户标识，用于数据隔离
 
         Returns:
             更新结果，包含新的总资产和账户余额
         """
+        user_id = self._current_user_id
         data = _load_vault(user_id)
         if account not in data.get("accounts", {}):
             return json.dumps({"success": False, "message": f"未知账户: {account}"}, ensure_ascii=False)
@@ -92,17 +78,17 @@ class VaultManagerTool(Toolkit):
             "message": f"{data['accounts'][account]['label']}已存入 ¥{amount}，当前余额 ¥{data['accounts'][account]['balance']:.2f}，总资产 ¥{data['total_assets']:.2f}"
         }, ensure_ascii=False)
 
-    def update_goal_progress(self, goal_name: str, amount: float, user_id: str = "default_user") -> str:
+    def update_goal_progress(self, goal_name: str, amount: float) -> str:
         """更新梦想清单中某个目标的进度。当用户说为某个目标存了钱时调用。
 
         Args:
             goal_name: 目标名称，如 "AirPods Pro"、"毕业旅行基金"、"新款iPad"
             amount: 本次新存入的金额
-            user_id: 用户标识，用于数据隔离
 
         Returns:
             更新结果，包含目标最新进度
         """
+        user_id = self._current_user_id
         data = _load_vault(user_id)
         goals = data.get("goals", [])
 

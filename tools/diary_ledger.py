@@ -68,11 +68,12 @@ def _save_expenses(data: dict, user_id: str = "default_user"):
 class DiaryToLedgerTool(Toolkit):
     def __init__(self):
         super().__init__(name="diary_ledger")
+        self._current_user_id = "default_user"
         self.register(self.record_expense)
         self.register(self.record_income)
         self.register(self.get_daily_summary)
 
-    def record_expense(self, category: str, amount: float, description: str = "", date: Optional[str] = None, user_id: str = "default_user") -> str:
+    def record_expense(self, category: str, amount: float, description: str = "", date: Optional[str] = None) -> str:
         """记录一笔支出。当用户说了花钱/消费/买东西等信息时调用。
 
         Args:
@@ -80,11 +81,11 @@ class DiaryToLedgerTool(Toolkit):
             amount: 金额（数字）
             description: 具体描述，如"中午吃了麻辣烫"
             date: 日期，格式 YYYY-MM-DD，默认今天
-            user_id: 用户标识，用于数据隔离
 
         Returns:
             记录结果
         """
+        user_id = self._current_user_id
         data = _load_expenses_for_write(user_id)
         record = {
             "category": category,
@@ -105,7 +106,7 @@ class DiaryToLedgerTool(Toolkit):
             "message": f"已记录支出 ¥{amount}（{category}：{description}）"
         }, ensure_ascii=False)
 
-    def record_income(self, category: str, amount: float, description: str = "", date: Optional[str] = None, user_id: str = "default_user") -> str:
+    def record_income(self, category: str, amount: float, description: str = "", date: Optional[str] = None) -> str:
         """记录一笔收入。当用户说了赚钱/收到/进账/工资/生活费等信息时调用。
 
         Args:
@@ -113,11 +114,11 @@ class DiaryToLedgerTool(Toolkit):
             amount: 金额（数字）
             description: 具体描述
             date: 日期，格式 YYYY-MM-DD，默认今天
-            user_id: 用户标识，用于数据隔离
 
         Returns:
             记录结果
         """
+        user_id = self._current_user_id
         data = _load_expenses_for_write(user_id)
         record = {
             "category": category,
@@ -138,17 +139,17 @@ class DiaryToLedgerTool(Toolkit):
             "message": f"已记录收入 ¥{amount}（{category}：{description}）"
         }, ensure_ascii=False)
 
-    def get_daily_summary(self, start_date: Optional[str] = None, end_date: Optional[str] = None, user_id: str = "default_user") -> str:
+    def get_daily_summary(self, start_date: Optional[str] = None, end_date: Optional[str] = None) -> str:
         """获取收支记录。可按日期范围筛选。不传参数则返回全部记录。
 
         Args:
             start_date: 起始日期，格式 YYYY-MM-DD（含），如 "2026-02-18"
             end_date: 结束日期，格式 YYYY-MM-DD（含），如 "2026-05-18"
-            user_id: 用户标识，用于数据隔离
 
         Returns:
             符合条件的收支记录和汇总
         """
+        user_id = self._current_user_id
         data = _load_expenses_for_read(user_id)
         records = data.get("records", [])
 
