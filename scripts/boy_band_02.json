@@ -1,0 +1,82 @@
+{
+  "script_id": "boy_band_02",
+  "script_name": "重生之嫁给男团队长",
+  "theme": "娱乐圈甜宠重生",
+  "npc_role": "男团队长（由貔貅学长扮演）",
+  "npc_prompt": "你现在是当红男团的队长，用户是重生回来的前世CP。你说话温柔霸道、宠溺又带点调皮，会把用户的每一笔存款比喻成两人一起攒的'婚礼基金'或'未来规划'。省钱行为会被你夸成'果然是我老婆/老公，持家有道'。花钱则要温柔劝阻'宝贝你忘了我们的计划了吗？'语气要甜到齁，但不油腻。",
+  "total_fund_target": 8000,
+  "plots": [
+    {
+      "plot_id": 1,
+      "plot_name": "重生觉醒：攒下第一笔婚基",
+      "required_fund": 300,
+      "cumulative_fund": 300,
+      "action_type": "deposit",
+      "success_dialogue": "宝贝你醒了？太好了，这次我们一起存下的第一笔钱，就是我们新生活的开始。三百块虽然不多，但你知道吗？我第一次发工资也只有这么多～",
+      "comic_prompt": "日系少女漫画风格，柔光中男团队长温柔牵起女主的手，背景是樱花飘落的公园长椅，粉紫色调，充满浪漫氛围"
+    },
+    {
+      "plot_id": 2,
+      "plot_name": "拒绝前世渣男的奢侈品陷阱",
+      "required_fund": 0,
+      "cumulative_fund": 300,
+      "action_type": "save_money",
+      "success_dialogue": "干得漂亮！上辈子你就是被这种糖衣炮弹骗走的。这辈子有我在，谁都别想用那些破包收买你的心！",
+      "comic_prompt": "日系漫画风格，女主霸气扔掉前世渣男送来的礼物盒，身后男团队长微笑着撑起雨伞挡住金色碎屑，暖橙色调"
+    },
+    {
+      "plot_id": 3,
+      "plot_name": "两人的秘密练习室约会基金",
+      "required_fund": 1000,
+      "cumulative_fund": 1300,
+      "action_type": "deposit",
+      "success_dialogue": "一千块到手！我已经订好了周末练习室的下午时段，就我们两个人。我教你跳那支出道曲，好不好？这是只属于我们的时间。",
+      "comic_prompt": "日系漫画风格，空旷的舞蹈练习室中两人面对面跳舞，镜子倒映出旋转的身影，落地窗洒入橘色夕阳"
+    },
+    {
+      "plot_id": 4,
+      "plot_name": "忍住追星周边的冲动消费",
+      "required_fund": 0,
+      "cumulative_fund": 1300,
+      "action_type": "save_money",
+      "success_dialogue": "哈哈你都嫁给我了还追什么星啊？开玩笑的～但你能忍住不乱花钱真的好棒，我把省下的这笔加到我们的蜜月旅行基金里了！",
+      "comic_prompt": "日系漫画风格，女主关闭了购物网站的页面，手机屏幕上显示'订单已取消'，旁边队长竖起大拇指满脸欣慰"
+    },
+    {
+      "plot_id": 5,
+      "plot_name": "男团演唱会：你的专属VIP席",
+      "required_fund": 2000,
+      "cumulative_fund": 3300,
+      "action_type": "deposit",
+      "success_dialogue": "两千块！你知道吗，下个月演唱会我在最前排给你留了位置，不是粉丝席——是家属席。所有镜头扫过来的时候，我只看你。",
+      "comic_prompt": "日系漫画风格，万人演唱会舞台上队长向台下特定位置比心，聚光灯打在观众席中幸福微笑的女主身上，蓝紫炫光"
+    },
+    {
+      "plot_id": 6,
+      "plot_name": "拒绝经纪公司的分手协议金",
+      "required_fund": 0,
+      "cumulative_fund": 3300,
+      "action_type": "save_money",
+      "success_dialogue": "我就知道你不会要那笔钱。他们越是想拆散我们，越证明我们走的路是对的。我的人气和你的坚持，才是我们最大的底气。",
+      "comic_prompt": "日系漫画风格，两人并肩站立面对西装革履的经纪人，女主把合同撕碎撒向空中，男主牵紧她的手，逆光剪影"
+    },
+    {
+      "plot_id": 7,
+      "plot_name": "婚礼筹备基金达标",
+      "required_fund": 3000,
+      "cumulative_fund": 6300,
+      "action_type": "deposit",
+      "success_dialogue": "三千块……加上之前的，我们的婚礼基金已经有六千多了。我想好了，不要那种奢华的酒店婚礼——就在我们第一次相遇的那个公园，好不好？",
+      "comic_prompt": "日系漫画风格，队长拿着一个简朴但温馨的婚礼策划本给女主看，两人坐在家中沙发上，暖黄色灯光洒满房间"
+    },
+    {
+      "plot_id": 8,
+      "plot_name": "蜜月旅行基金·大结局",
+      "required_fund": 1700,
+      "cumulative_fund": 8000,
+      "action_type": "deposit",
+      "success_dialogue": "八千块全部到位！机票我已经订好了——马尔代夫，就我们俩。从今天开始，不是重生故事了，是我们真实的未来。谢谢你一路陪我走到这里。",
+      "comic_prompt": "日系漫画风格，碧蓝海滩上两人手牵手奔向大海，身后是写着'Just Married'的行李箱，明亮温暖的蓝天白云"
+    }
+  ]
+}
