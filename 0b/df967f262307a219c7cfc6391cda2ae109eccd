@@ -1,0 +1,142 @@
+main.py
+  73e9f1f5b042bd5a 38-39,42,111-112 gitai:{"mixed_line_ranges":[],"operations":[{"operation_id":"6a0be4d2647367669876eb42","tool_type":"agent","tool_id":"Edit","line_ranges":[{"Range":[38,39]},{"Single":42},{"Range":[111,112]}]}]}
+tools/diary_ledger.py
+  73e9f1f5b042bd5a 3,6-7,97-98,130-131 gitai:{"mixed_line_ranges":[],"operations":[{"operation_id":"6a0be4d2647367669876eb42","tool_type":"agent","tool_id":"Edit","line_ranges":[{"Single":3},{"Range":[6,7]},{"Range":[97,98]},{"Range":[130,131]}]}]}
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "0bdf967f262307a219c7cfc6391cda2ae109eccd",
+  "prompts": {
+    "73e9f1f5b042bd5a": {
+      "agent_id": {
+        "tool": "trae",
+        "id": "6a0b812f647367669876e803",
+        "model": "c_o_new__dev"
+      },
+      "human_author": "xingchaoran <xingchaoran@bytedance.com>",
+      "messages": [],
+      "total_additions": 12,
+      "total_deletions": 9,
+      "accepted_lines": 12,
+      "overriden_lines": 0
+    }
+  },
+  "attestation_metadata": {
+    "main.py": [
+      {
+        "hash": "73e9f1f5b042bd5a",
+        "line_ranges": [
+          {
+            "Range": [
+              38,
+              39
+            ]
+          },
+          {
+            "Single": 42
+          },
+          {
+            "Range": [
+              111,
+              112
+            ]
+          }
+        ],
+        "mixed_line_ranges": [],
+        "operations": [
+          {
+            "operation_id": "6a0be4d2647367669876eb42",
+            "tool_type": "agent",
+            "tool_id": "Edit",
+            "line_ranges": [
+              {
+                "Range": [
+                  38,
+                  39
+                ]
+              },
+              {
+                "Single": 42
+              },
+              {
+                "Range": [
+                  111,
+                  112
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "tools/diary_ledger.py": [
+      {
+        "hash": "73e9f1f5b042bd5a",
+        "line_ranges": [
+          {
+            "Single": 3
+          },
+          {
+            "Range": [
+              6,
+              7
+            ]
+          },
+          {
+            "Range": [
+              97,
+              98
+            ]
+          },
+          {
+            "Range": [
+              130,
+              131
+            ]
+          }
+        ],
+        "mixed_line_ranges": [],
+        "operations": [
+          {
+            "operation_id": "6a0be4d2647367669876eb42",
+            "tool_type": "agent",
+            "tool_id": "Edit",
+            "line_ranges": [
+              {
+                "Single": 3
+              },
+              {
+                "Range": [
+                  6,
+                  7
+                ]
+              },
+              {
+                "Range": [
+                  97,
+                  98
+                ]
+              },
+              {
+                "Range": [
+                  130,
+                  131
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "remote_transcripts": {
+    "73e9f1f5b042bd5a": {
+      "tool": "trae",
+      "conversation_id": "6a0b812f647367669876e803",
+      "session_id": "6a0b812f647367669876e803",
+      "status": "remote_only",
+      "message": "Remote transcript resolution is not implemented yet for TRAE prompts."
+    }
+  }
+}
