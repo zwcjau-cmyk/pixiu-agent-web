@@ -35,10 +35,11 @@ SOUL_PATH = Path(__file__).parent / "soul.md"
 soul_prompt = SOUL_PATH.read_text(encoding="utf-8")
 
 # 注入当前日期的模板（每次请求时动态替换）
-from datetime import datetime as _dt
+from datetime import datetime as _dt, timezone as _tz, timedelta as _td
+_CN_TZ = _tz(_td(hours=8))  # 东八区
 _date_template = "\n\n---\n## 系统信息\n- 今天的日期是：{today}\n- 当用户提到\"今天\"的收支时，日期参数必须使用 {today}\n- 当用户没有明确说日期时，默认使用今天的日期 {today}\n"
 # 启动时先注入一次
-_today = _dt.now().strftime("%Y-%m-%d")
+_today = _dt.now(_CN_TZ).strftime("%Y-%m-%d")
 soul_prompt += _date_template.format(today=_today)
 
 # 数据库路径
@@ -107,8 +108,8 @@ class ChatResponse(BaseModel):
 @app.post("/api/chat")
 async def chat_endpoint(req: ChatRequest):
     """与貔貅学长对话 - SSE 流式输出"""
-    # 每次请求动态更新日期，确保跨天后日期正确
-    today_str = _dt.now().strftime("%Y-%m-%d")
+    # 每次请求动态更新日期，确保跨天后日期正确（东八区）
+    today_str = _dt.now(_CN_TZ).strftime("%Y-%m-%d")
     base_prompt = SOUL_PATH.read_text(encoding="utf-8")
     pixiu_agent.instructions = [base_prompt + _date_template.format(today=today_str)]
 

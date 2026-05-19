@@ -1,8 +1,10 @@
 """日记转账单工具 - 从用户自然语言中提取消费记录，按 user_id 隔离存储"""
 import json
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from typing import Optional
+
+_CN_TZ = timezone(timedelta(hours=8))  # 东八区
 from agno.tools import Toolkit
 
 DATA_DIR = Path(__file__).parent.parent / "data"
@@ -92,8 +94,8 @@ class DiaryToLedgerTool(Toolkit):
             "amount": amount,
             "description": description,
             "type": "expense",
-            "date": date or datetime.now().strftime("%Y-%m-%d"),
-            "created_at": datetime.now().isoformat(),
+            "date": date or datetime.now(_CN_TZ).strftime("%Y-%m-%d"),
+            "created_at": datetime.now(_CN_TZ).isoformat(),
         }
         data["records"].insert(0, record)
         data["monthly_summary"]["total_expense"] = data["monthly_summary"].get("total_expense", 0) + amount
@@ -125,8 +127,8 @@ class DiaryToLedgerTool(Toolkit):
             "amount": amount,
             "description": description,
             "type": "income",
-            "date": date or datetime.now().strftime("%Y-%m-%d"),
-            "created_at": datetime.now().isoformat(),
+            "date": date or datetime.now(_CN_TZ).strftime("%Y-%m-%d"),
+            "created_at": datetime.now(_CN_TZ).isoformat(),
         }
         data["records"].insert(0, record)
         data["monthly_summary"]["total_income"] = data["monthly_summary"].get("total_income", 0) + amount
